@@ -1,0 +1,190 @@
+
+-----------------------------------------------------
+RSucursal-Galerias
+-----------------------------------------------------
+ena
+config ter
+hostname RSucursal-Galerias
+
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+ip domain-name HUAWEI.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+line con 0
+ login local
+ logging sync
+
+line vty 0 4
+ login local
+ transport input ssh
+
+int g0/0/0
+desc Interfaz con el ISP
+ip address 132.89.255.253 255.255.255.0
+! Solo aplica cuando instalamos el servicio de NAT
+ip nat outside
+no shut
+
+! Definici�n de subinterfaces en int g0/0/1 {Ejecutivos, Servers, Almacen, Gestion, PVentas}
+
+int g0/0/1.100
+    desc Subinterfaz para la subred de Ejecutivos
+    encapsulation dot1Q 100
+    ip address 192.168.100.46 255.255.255.240
+    ! Solo aplica cuando instalamos el servicio de NAT
+    ip nat inside
+
+int g0/0/1.200
+    desc Subinterfaz para la subred de Servidores
+    encapsulation dot1Q 200
+    ip address 192.168.100.54 255.255.255.248
+    ! Solo aplica cuando instalamos el servicio de NAT
+    ip nat inside
+
+int g0/0/1.500
+    desc Subinterfaz para la subred de Almacen
+    encapsulation dot1Q 200
+    ip address 192.168.100.254 255.255.255.248
+    ! Solo aplica cuando instalamos el servicio de NAT
+    ip nat inside
+
+int g0/0/1.777
+    desc Subinterfaz para la subred de Gestión
+    encapsulation dot1Q 777
+    ip address 192.168.100.198 255.255.255.248
+    ! Solo aplica cuando instalamos el servicio de NAT
+    ip nat inside
+
+int g0/0/1.800
+    desc Subinterfaz para la subred de PVenta
+    encapsulation dot1Q 800
+    ip address 192.168.100.166 255.255.255.248
+    ! Solo aplica cuando instalamos el servicio de NAT
+    ip nat inside
+
+
+! Encender la interfaz correspondiente.
+int g0/0/1
+no shut
+
+! Definici�n de los servicios DHCP para subredes
+! DHCP Pool
+ip dhcp excluded-address 192.168.100.46
+
+ip dhcp pool Ejecutivos
+    network 192.168.100.32 255.255.255.240
+    default-router 192.168.100.46
+    dns-server 8.8.8.8
+
+ip dhcp excluded-address 192.168.100.254
+
+ip dhcp pool Almacen
+    network 192.168.100.248 255.255.255.248
+    default-router 192.168.100.254
+    dns-server 8.8.8.8
+
+ip dhcp excluded-address 192.168.100.166
+
+ip dhcp pool Ejecutivos
+    network 192.168.100.160 255.255.255.248
+    default-router 192.168.100.166
+    dns-server 8.8.8.8
+
+
+! NAT est�tico. Aqu� se deben incluir los equipos que ser�n visibles desde Internet
+ip nat inside source static 192.168.100.53 132.89.255.38
+ip nat inside source static 192.168.100.197 132.89.255.39
+
+! Definici�n del pool para NAT din�mico con sobrecarga (PAT)
+ip nat pool Huawei 132.89.255.36 132.89.255.39 netmask 255.255.255.252
+
+! Definir qui�n puede acceder al NAT din�mico
+access-list 1 permit 192.168.100.0 0.0.0.255
+
+! Asociar el POOL de IP p�blicas y la lista de permisos al NAT o PAT din�mico
+ip nat inside source list 1 pool Huawei overload
+
+
+! Establecimiento de ruta est�tica por default directamente conectada.
+ip route 0.0.0.0  0.0.0.0  g0/0/0
+
+
+-----------------------------------------------------
+Switch S-PGalerias
+-----------------------------------------------------
+en
+conf t
+hostname S-PGalerias
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+username  CIT  privilege  15  secret  tc2036
+ip domain-name HUAWEI.com
+crypto key generate rsa
+
+yes
+1024
+
+line con 0
+    login local
+    logging sync
+
+line vty 0 4
+    login local
+    transport input ssh
+
+
+vlan 100
+name Ejecutivos
+
+vlan 200
+name Servidores
+
+vlan 500
+name Almacen
+
+vlan 777
+name Gestion
+
+vlan 800
+name PVentas
+
+! Asignaci�n de puertos a cada VLAN
+int range F0/1-12
+    switchport mode access
+    switchport access vlan 100
+
+int range F0/20-24, G0/2
+    switchport mode access
+    switchport access vlan 200
+
+int range F0/17-19
+    switchport mode access
+    switchport access vlan 500
+
+int range F0/14-16
+    switchport mode access
+    switchport access vlan 800
+
+! Definici�n de puertos trunk.
+int G0/1
+    switchport mode trunk
+    no shut
+
+! Declaraci�n y configuraci�n de la VLAN de gesti�n.
+int vlan 777
+    desc VLAN de gestion
+    ip add 192.168.100.197 255.255.255.248
+    no shut
+
+ip default-gateway 192.168.100.198 

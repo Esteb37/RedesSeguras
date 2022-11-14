@@ -1,0 +1,247 @@
+------------------------------------------------------------------
+Configuraci�n parcial del router RSucursal.
+En esta prueba de concepto se ha implementado la router-on-a-stick
+------------------------------------------------------------------
+
+enable
+config terminal
+hostname RSucursal
+enable secret act06
+service password-enc
+no ip domain-lookup
+
+line con 0
+  password act06
+  login
+  logging sync
+
+line vty 0 4
+  password act06
+  login
+
+int s0/1/0
+  description Interfaz con el ISP
+  ip address 65.70.200.253  255.255.255.252
+  no shut
+
+! Definición de subinterfaces {10,20,30,40} en int g0/0/0
+int g0/0/1.1
+  description Interfaz VLAN de gestion
+  encapsulation dot1q 1
+  ip address  192.168.20.254  255.255.255.248
+
+int g0/0/0.10
+  description Interfaz VLAN de Ejecutivos
+  encapsulation dot1q 10
+  ip address 192.168.20.126  255.255.255.240
+
+int g0/0/0.20
+  description Interfaz VLAN de Impresoras
+  encapsulation dot1q 20
+  ip address 192.168.20.158  255.255.255.240
+
+int g0/0/0.30
+  description Interfaz VLAN de Ventanillas
+  encapsulation dot1q 30
+  ip address 192.168.20.110  255.255.255.240
+
+int g0/0/0.40
+  description Interfaz VLAN de CajerosATM
+  encapsulation dot1q 40
+  ip address 192.168.20.142  255.255.255.240
+
+int g0/0/0
+no shutdown
+
+
+! Definición de subinterfaces {50,60,70} en int g0/0/1 
+int g0/0/1.50
+  description Interfaz VLAN de FilaEjecutivos
+  encapsulation dot1q 50
+  ip address 192.168.20.94  255.255.255.224
+
+int g0/0/1.60
+  description Interfaz VLAN de FilaVentanillas
+  encapsulation dot1q 60
+  ip address 192.168.20.174  255.255.255.240
+
+int g0/0/1.70
+  description Interfaz VLAN de Visitantes
+  encapsulation dot1q 70
+  ip address 192.168.20.62  255.255.255.192
+
+int g0/0/1
+no shut
+
+! Definición de los servicios DHCP para subredes del switch S-WiFI
+ip dhcp excluded-address  192.168.20.94
+ip dhcp pool FilaEjecutivos
+    network  192.168.20.64  255.255.255.224
+    default-router  192.168.20.94
+    dns-server 8.8.8.8
+
+ip dhcp excluded-address  192.168.20.174
+ip dhcp pool FilaVentanillas
+    network  192.168.20.160  255.255.255.240
+    default-router  192.168.20.174
+    dns-server 8.8.8.8
+
+ip dhcp excluded-address  192.168.20.62
+ip dhcp pool Visitantes
+    network  192.168.20.0  255.255.255.192
+    default-router  192.168.20.62
+    dns-server 8.8.8.8
+
+! Para conectarnos con el proveedor de servicio es necesario
+! establecer la ruta por default para sacar todo el tráfico por la interfaz indicada.
+ip route 0.0.0.0 0.0.0.0 s0/1/0
+
+
+-----------------------------------------------------
+Configuración Parcial del switch S-WiFi
+-----------------------------------------------------
+en
+conf t
+hostname S-WiFi
+enable secret act06
+service pass
+no ip domain-lookup
+
+line con 0
+  password act06
+  login
+  logging sync
+
+line vty 0 15
+  password act06
+  login
+
+! Creación de VLANs {50,60,70} con nombre {FilaEjecutivos, FilaVentanillas, Visitantes}
+vlan 50
+name FilaEjecutivos
+
+vlan 60
+name FilaVentanillas
+
+vlan 70
+name Visitantes
+
+exit
+
+! Asignación de puertos del switch a la VLAN correspondiente
+int F0/2
+    switchport mode access
+    switchport access vlan 50
+
+int F0/1
+    switchport mode access
+    switchport access vlan 60
+
+int F0/3
+    switchport mode access
+    switchport access vlan 70
+
+! Establecimiento del puerto TRUNK para transportar múltiples VLANs
+int G0/2
+    switchport mode trunk
+    no shut
+
+ip default-gateway  192.168.20.254
+
+-----------------------------------------------------
+Configuración Parcial del switch SServicios
+-----------------------------------------------------
+en
+conf t
+hostname S-Servicios
+
+service pass
+enable secret class
+
+no ip domain-lookup
+
+line con 0
+  password act06
+  login
+  logging sync
+
+line vty 0 15
+  password act06
+  login
+
+! Creación de VLANs {10,20,30 y 40} con nombre {Ejecutivos,Impresoras,Ventanillas y CajerosATM}
+vlan 10
+name Ejecutivos
+
+vlan 20
+name Impresoras
+
+vlan 30
+name Ventanillas
+
+vlan 40
+name CajerosATM
+
+exit
+
+! Asignación de puertos del switch a la VLAN correspondiente
+int range F0/7-12
+    switchport mode access
+    switchport access vlan 10
+
+int range F0/13-18
+    switchport mode access
+    switchport access vlan 20
+
+int range F0/1-6
+    switchport mode access
+    switchport access vlan 30
+
+! Establecimiento del puerto TRUNK para transportar múltiples VLANs
+int range g0/1-2
+    switchport mode trunk
+    no shut
+
+
+ip default-gateway  192.168.20.254
+
+-----------------------------------------------------
+SW SATMs
+-----------------------------------------------------
+en
+conf t
+hostname SATMs
+enable secret class
+service pass
+no ip domain-lookup
+
+line con 0
+  password act06
+  login
+  logging sync
+
+line vty 0 15
+  password act06
+  login
+
+! Creación de VLANs con nombre. 
+vlan 10
+name FilaEjecutivos
+
+vlan 20
+name Impresoras
+
+vlan 30
+name Ventanillas
+
+vlan 40
+name CajerosATM
+
+exit
+
+! Asignación de todos los puertos FE del switch a la VLAN correspondiente
+int range F0/1-20
+    switchport mode access
+    switchport access vlan 40
+
+ip default-gateway  192.168.20.254

@@ -1,0 +1,257 @@
+
+!-----------------------------------------------------
+!                      RSucursal-TEC
+!-----------------------------------------------------
+ena
+config ter
+hostname RSucursal-TEC
+
+no ip domain-lookup
+
+banner motd # ============================================
+
+	El acceso a este equipo esta restringido !!!
+
+=========================================================#
+
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+username  CEO privilege  15  secret  tc2036ceo
+
+ip domain-name KIOSKITO.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+line con 0
+ login local
+ logging sync
+
+line vty 0 4
+ login local
+ transport input ssh
+
+int g0/0/1
+ desc Interfaz con el ISP ALESTRA
+ ! En esta ocasi�n la configuraci�n de la interfaz ser� por DHCP.
+ ip address dhcp
+ ! Solo aplica cuando instalamos el servicio de NAT
+ ip nat outside
+ no shut
+
+! Definici�n de subinterfaces en int g0/0/0 {Surveillance, Cajas,  Administracion, Gestion, Servers}
+
+int g0/0/0.<VID>
+ desc Subinterfaz para la subred de Surveillance
+ encapsulation dot1Q <VID>
+ ip address <DIR_IP> <MSK>
+ ! Solo aplica cuando instalamos el servicio de NAT
+ ip nat <inside | outside>
+
+int g0/0/0.<ID>
+ desc Subinterfaz para la subred de Cajas
+ encapsulation dot1Q <ID>
+ ip address <DIR_IP> <MSK>
+ ! Solo aplica cuando instalamos el servicio de NAT
+ ip nat <inside | outside>
+
+int g0/0/0.60
+ desc Subinterfaz para la subred de Administracion
+ encapsulation dot1Q 60
+ ip address 192.168.0.78  255.255.255.240
+ ! Solo aplica cuando instalamos el servicio de NAT
+ ip nat inside
+
+int g0/0/0.777
+ desc Subinterfaz para la subred de Gestion
+ encapsulation dot1Q 777
+ ip address 192.168.0.254  255.255.255.248
+ ! Solo aplica cuando instalamos el servicio de NAT
+ ip nat inside
+
+int g0/0/0.900
+ desc Subinterfaz para la subred de Servers
+ encapsulation dot1Q 900
+ ip address 192.168.0.246  255.255.255.248
+ ! Solo aplica cuando instalamos el servicio de NAT
+ ip nat inside
+
+! Encender la interfaz correspondiente.
+int g0/0/0
+ no shut
+
+! Definici�n de los servicios DHCP para subred Administraci�n
+ip dhcp excluded-address DirIP_Inicial  DirIP_Final
+ip dhcp pool <Nombre>
+ network <Direcci�nIP_Inicial> <MSK>
+ default-router <PuertaEnlacePredeterminada>
+ dns-server <Direcci�nIP_DNS>
+
+! NAT est�tico. Aqu� se deben incluir los equipos que ser�n visibles desde Internet
+ip nat inside source static <DIR_IP_Privada> <DIR_IP_P�blica>
+
+! Definici�n del pool para NAT din�mico con sobrecarga (PAT)
+ip nat pool <Nombre_Pool> <IP_inicial> <IP_final> netmask <MSK>
+
+! Definir qui�n puede acceder al NAT din�mico
+access-list <N�mero> <Acci�n> <IP_Inicial> <Wild_Card_Mask>
+
+! Asociar el POOL de IP p�blicas y la lista de permisos al NAT o PAT din�mico
+ip nat inside source list <N�mero> pool <Nombre_Pool> overload
+
+
+! Establecimiento de ruta est�tica por default directamente conectada.
+ip route 0.0.0.0  0.0.0.0  g0/0/1
+
+
+!-----------------------------------------------------
+!                       Switch S-CQro
+!-----------------------------------------------------
+ena
+config ter
+hostname S-CQro
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+ip domain-name KIOSKITO.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+line con 0
+login local
+logging sync
+
+line vty 0 4
+login local
+transport input ssh
+
+! Creaci�n de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
+vlan <VID>
+name <Nombre>
+
+int range <Interfaces>
+ switchport mode access
+ switchport access vlan <VID>
+
+int G0/2
+ switchport mode access
+ switchport access vlan <VID>
+
+! Definici�n de puertos trunk.
+int range <Iterfaces>
+ switchport mode trunk
+ no shut
+
+! Declaraci�n y configuraci�n de la VLAN de gesti�n.
+int vlan <ID_VLAN>
+ desc VLAN de gesti�n 
+ ip add <DIR_IP> <MSK>
+ no shut
+
+ip default-gateway <DIR_IP>
+
+!-----------------------------------------------------
+!                 Switch SSurveillance
+!-----------------------------------------------------
+ena
+config ter
+hostname SSurveillance
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+ip domain-name KIOSKITO.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+line con 0
+login local
+logging sync
+
+line vty 0 4
+login local
+transport input ssh
+
+! Creaci�n de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
+vlan 
+name 
+
+! Asignaci�n de todos los puertos a una VLAN
+int range <Interfaes>
+ switchport mode access
+ switchport access vlan <VID>
+
+! Definici�n de puertos trunk.
+int range <Iterfaces>
+ switchport mode trunk
+ no shut
+
+! Declaraci�n y configuraci�n de la IP de gesti�n.
+int vlan <ID_VLAN>
+ desc VLAN de gesti�n ....
+ ip add <DIR_IP> <MSK>
+ no shut
+
+ip default-gateway <PuertaEnlacePredeterminada>
+
+!-----------------------------------------------------
+!                    Switch SCajas
+!-----------------------------------------------------
+ena
+config ter
+hostname SCajas
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+ip domain-name KIOSKITO.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+line con 0
+login local
+logging sync
+
+line vty 0 4
+login local
+transport input ssh
+
+! Creaci�n de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
+vlan 
+name
+
+! Asignaci�n de todos puertos a la VLAN 20
+int range F0/1-24, G0/1-2
+ switchport mode access
+ switchport access vlan 20
+
+! Declaraci�n y configuraci�n de interfaz TRUNK.
+int <Interface>
+ switchport mode trunk
+ no shut
+
+! Declaraci�n y configuraci�n de la IP de gesti�n.
+int vlan <VID>
+ desc VLAN de gesti�n ....
+ ip add <DIR_IP> <MSK>
+ no shut
+
+ip default-gateway <PuertaEnlacePredeterminada>

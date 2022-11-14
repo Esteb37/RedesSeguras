@@ -1,0 +1,174 @@
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! - - - - - - - Autor: Esteban Padilla - - - - - - - 
+! = = = = = = = = = = = = = = = = = = = = = = = 
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch S-Servicios
+! = = = = = = = = = = = = = = = = = = = = = = =
+ 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 17:00:00 Oct 10 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: tecservices@tec.mx
+#
+
+! Nombrar el equipo
+hostname S-Servicios
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 15
+ password  tc2036
+ login
+ logging sync
+
+! Asignación de IP a la VLAN 1 (SVI)
+interface vlan 1
+ ip address 192.168.1.253    255.255.255.0
+ description Dirección IP para gestionar el equipo S-Servicios
+ no shutdown
+
+ip default-gateway    192.168.1.254
+
+
+
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch S-Cajas
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 17:00:00 Oct 10 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: tecservices@tec.mx
+#
+
+! Nombrar el equipo
+hostname S-Cajas
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 15
+ password  tc2036
+ login
+ logging sync
+
+! Asignación de IP a la VLAN 1 (SVI)
+interface vlan 1
+ ip address 192.168.1.252    255.255.255.0
+ description Dirección IP para gestionar el equipo S-Cajas
+ no shutdown
+
+ip default-gateway    192.168.1.254
+
+
+
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch Router-Kioskito
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 17:00:00 Oct 10 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: tecservices@tec.mx
+#
+
+! Nombrar el equipo
+hostname Router-Kioskito
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 4
+ password  tc2036
+ login
+ logging sync
+
+! Configuración de interfaces
+interface G0/0/0
+ description Interfaz que da servicio a la red local de Kioskito
+ ip address 192.168.1.254    255.255.255.0
+ no shutdown
+
+interface s0/1/0
+ description Interfaz con el ISP
+ ip address 65.70.200.253    255.255.255.252
+ no shutdown
+
+ip route 0.0.0.0    0.0.0.0    s0/1/0

@@ -1,0 +1,271 @@
+!-----------------------------------------------------
+!Router R-ServRes_Internet
+!-----------------------------------------------------
+enable
+config ter
+hostname R-ServRes_Internet
+
+! Sirve para obtener el máximo privilegio si no lo tienes
+enable secret tc2036
+
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+
+username  CIT  privilege  15  secret  tc2036
+username  Becario privilege  1  secret  tc2036
+ip domain-name NewBusiness.com
+crypto key generate rsa
+
+yes
+1024
+
+line con 0
+ login local
+ logging sync
+
+
+line vty 0 4
+ login local
+ transport input all
+
+int s0/1/1
+ desc Interconexion con el ISP ALESTRA
+ ip add 65.70.200.253 255.255.255.252
+ no shut
+
+! Declaracion de los Pools para los DHCPs={HomeOffice, EduProfesional, EduBasica, RedesSociales, Entretenimiento}
+
+ip dhcp excluded-address 12.16.0.30
+ip dhcp excluded-address 12.16.0.1 12.16.0.4
+
+ip dhcp pool HomeOffice
+ network 12.16.0.0 255.255.255.224
+ default-router 12.16.0.30
+ dns-server 8.8.8.8
+
+
+ip dhcp excluded-address 12.16.0.78
+
+ip dhcp pool EduProfesional
+ network 12.16.0.64 255.255.255.240
+ default-router 12.16.0.78
+ dns-server 8.8.8.8
+
+ip dhcp excluded-address 12.16.0.62
+
+ip dhcp pool EduBasica
+ network 12.16.0.32 255.255.255.224
+ default-router 12.16.0.62
+ dns-server 8.8.8.8
+
+ip dhcp excluded-address 12.16.0.94
+
+ip dhcp pool RedesSociales
+ network 12.16.0.80 255.255.255.240
+ default-router 12.16.0.94
+ dns-server 8.8.8.8
+
+ip dhcp excluded-address 12.16.0.110
+
+ip dhcp pool Entretenimiento
+ network 12.16.0.96 255.255.255.240
+ default-router 12.16.0.110
+ dns-server 8.8.8.8
+
+
+! Subonterfaces GE para el manejo de las VLANs
+
+int g0/0/1.1
+ desc VLAN de Gestion
+ encapsulation dot1q 1
+ ip address 12.16.0.254 255.255.255.248
+
+int g0/0/1.10
+ desc VLAN de HomeOffice
+ encapsulation dot1q 10
+ ip address 12.16.0.30 255.255.255.224
+
+int g0/0/1.20
+ desc VLAN de EduProfesional
+ encapsulation dot1q 20
+ ip address 12.16.0.78 255.255.255.240
+
+int g0/0/1.30
+ desc VLAN de EduBasica
+ encapsulation dot1q 30
+ ip address 12.16.0.62 255.255.255.224
+
+int g0/0/1.40
+ desc VLAN de Redes Sociales
+ encapsulation dot1q 40
+ ip address 12.16.0.94 255.255.255.240
+
+int g0/0/1.50
+ desc VLAN de Entretenimiento
+ encapsulation dot1q 50
+ ip address 12.16.0.110 255.255.255.240
+
+
+int g0/0/1
+ no shut
+
+
+! Instalación de la ruta por default utilizando la interfaz con el ISP
+ip route 0.0.0.0 0.0.0.0 s0/1/1
+
+
+-----------------------------------------------------
+Switch  S-InternetResidencial
+-----------------------------------------------------
+enable
+config ter
+hostname S-InternetResidencial
+enable secret tc2036
+no ip domain-lookup
+banner motd # El acceso a este equipo esta restringido !!!#
+
+
+
+username  CIT  privilege  15  secret  tc2036
+ip domain-name NewBusiness.com
+crypto key generate rsa
+
+yes
+1024
+
+line vty 0 4
+login local
+transport input all
+
+
+line con 0
+ login local
+ logging sync
+
+
+! Creación de la BD de las VLANs con nombre = {HomeOffice, EduProfesional, EduBasica, RedesSociales y Entretenimiento}
+
+vlan 10
+name HomeOffice
+
+vlan 20
+name EduProfesional
+
+vlan 30
+name EduBasica
+
+vlan 40
+name RedesSociales
+
+vlan 50
+name Entretenimiento
+
+! Asignaci n de puertos a las VLANS
+
+interface range F0/1-9
+ switchport mode access
+ switchport access vlan 20
+
+interface range F0/10-16
+ switchport mode access
+ switchport access vlan 30
+
+interface range F0/17-18
+ switchport mode access
+ switchport access vlan 40
+
+interface range F0/19-22
+ switchport mode access
+ switchport access vlan 50
+
+
+! Definimos el puerto o puertos que transportar n el tr fico de las VLANs 
+interface range G0/1-2
+ switchport mode trunk
+ no shut
+
+! Configuraci n de la VLAN administrativa (IP y Gateway)
+interface vlan 1
+ description Interfaz de gestion y acceso remoto
+ ip address 12.16.0.249 255.255.255.248
+ no shut
+
+ip default-gateway 12.16.0.254
+
+-----------------------------------------------------
+Switch  S-HomeOffice
+-----------------------------------------------------
+en
+config ter
+hostname S-HomeOffice
+enable secret tc2036
+no ip domain-lookup
+banner motd # El acceso a este equipo esta restringido !!!#
+
+line con 0
+login local
+logging sync
+
+username  CIT  privilege  15  secret  tc2036
+ip domain-name NewBusiness.com
+crypto key generate rsa
+
+yes
+1024
+
+line vty 0 4
+login local
+transport input ssh
+
+! Creaci n de la BD de las VLANs con nombre = {HomeOffice, EduProfesional, EduBasica, RedesSociales y Entretenimiento}
+
+vlan 10
+name HomeOffice
+
+vlan 20
+name EduProfesional
+
+vlan 30
+name EduBasica
+
+vlan 40
+name RedesSociales
+
+vlan 50
+name Entretenimiento
+
+! Asignaci n de puertos a las VLANS
+
+interface range F0/1-9
+ switchport mode access
+ switchport access vlan 20
+
+interface range F0/10-16
+ switchport mode access
+ switchport access vlan 30
+
+interface range F0/17-18
+ switchport mode access
+ switchport access vlan 40
+
+interface range F0/19-22
+ switchport mode access
+ switchport access vlan 50
+
+! Definimos el puerto o puertos que transportar n el tr fico de las VLANs 
+interface range F0/1-24, G0/2
+ switchport mode access
+ switchport access vlan 10
+
+interface range G0/1
+ switchport mode trunk
+ no shut
+
+interface vlan 1
+ description Interfaz de gestion y acceso remoto
+ ip address 12.16.0.249 255.255.255.248
+ no shut
+
+ip default-gateway 12.16.0.254

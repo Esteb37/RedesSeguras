@@ -1,0 +1,178 @@
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! - - - - - - - Autor: Esteban Padilla - - - - - - - 
+! = = = = = = = = = = = = = = = = = = = = = = = 
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch S-Users
+! = = = = = = = = = = = = = = = = = = = = = = =
+ 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 16:45:00 Oct 13 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: tecservices@tec.mx
+#
+
+! Nombrar el equipo
+hostname Switch-Users
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 15
+ password  cisco
+ login
+ logging sync
+
+! Asignación de IP a la VLAN 1 (SVI)
+interface vlan 1
+ ip address 121.1.168.125    255.255.255.128
+ description Dirección IP para gestionar el equipo S-Users
+ no shutdown
+
+ip default-gateway    121.1.168.126
+
+
+
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch S-Company
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 16:45:00 Oct 13 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: tecservices@tec.mx
+#
+
+! Nombrar el equipo
+hostname Switch-Company
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 15
+ password  cisco
+ login
+ logging sync
+
+! Asignación de IP a la VLAN 1 (SVI)
+interface vlan 1
+ ip address 121.1.168.157    255.255.255.224
+ description Dirección IP para gestionar el equipo S-Users
+ no shutdown
+
+ip default-gateway    121.1.168.158
+
+
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch Router-Frontera
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 16:45:00 Oct 13 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: tecservices@tec.mx
+#
+
+! Nombrar el equipo
+hostname Router-Central
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 4
+ password  cisco
+ login
+ logging sync
+
+! Configuración de interfaces
+interface G0/0
+ description Interfaz que da servicio a la red local de Administradores
+ ip address 121.1.68.158    255.255.255.224
+ no shutdown
+
+interface G0/1
+ description Interfaz que da servicio a la red local de Usuarios
+ ip address 121.1.68.126    255.255.255.128
+ no shutdown
+
+interface s0/0/0
+ description Interfaz con el ISP
+ ip address 65.255.255.253   255.255.255.252
+ no shutdown
+
+ip route 0.0.0.0    0.0.0.0    s0/0/0

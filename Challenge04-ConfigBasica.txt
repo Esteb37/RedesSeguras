@@ -1,0 +1,197 @@
+----------- ISP -----------
+  Ya configurado
+
+---------- Router RFrontera ---------
+enable
+config t
+hostname  RFrontera
+
+
+no ip domain-lookup
+
+
+! Dar de alta los usuarios que podrán entrar a gestionar los equipos
+username   CEO   privilege  15  secret  tc2036
+username   CIT   privilege  15  secret  tc2036
+username   Admin01   privilege  15  secret  tc2036
+username   Admin02   privilege  15  secret  tc2036
+username   Admin03   privilege  15  secret  tc2036
+
+! Para activar el protocolo SSH en los equipos de interconexión, es necesario dar de alta nuestro dominio (solo es local):
+ip domain-name  AvePhoenix.com.mx 
+crypto key generate rsa
+
+yes
+1024
+
+line vty 0 4
+  login local
+  transport input ssh
+
+
+! enable secret 
+! service password-enc
+! Estos ya no sirven porque el SSH ya nos da la protección necesaria
+
+line con 0
+login local
+logging sync
+
+
+! Declaración de IP para interfaces
+int s0/0/0
+	desc Interfaz de interconexión con RFrontera
+	ip address 65.100.78.254 255.255.255.252
+	!Las interfaces DCE establecen la velocidad de transferencia con base en el clock rate
+	clock rate 2000000
+	no shut
+
+int s0/0/1
+	desc Interfaz de interconexión con el ISP ALESTRA
+	ip address 132.254.89.126 255.255.255.252
+	no shut
+
+int g0/0
+	description Interfaz para el Call Center
+	ip address 104.36.197.46 255.255.255.240
+	no shut
+
+int g0/1
+	description Interfaz para granja de servers
+	ip address 104.36.197.246 255.255.255.248
+	no shut
+
+! La ruta por default nos permite enviar todo el tráfico de nuetra LAN a Internet
+ip route 0.0.0.0 0.0.0.0 s0/0/1
+
+! Debemos establecer el protocolo de ruteo entre los vecinos diretamente conectados.
+! En el modo de configuración de la terminal debemos definir el protocolo y un ID asociado router 
+ospf 2022
+! Agregar las redes/subredes directamente conectadas que se desean anunciar
+network  104.36.197.240  0.0.0.7  area 0
+network  104.36.197.32   0.0.0.14 area 0
+network  65.100.78.252   0.0.0.3  area 0
+
+! Es recomendable que las interfaces de router que NO interconectan más routers sean configuradas como pasivas.
+passive-interface   s0/0/1
+passive-interface   g0/0
+passive-interface   g0/1
+
+! Este comando sólo aplica al Router Frontera.
+! Debemos propagar la ruta por default que sólo el Router Frontera define
+default-information   originate
+ 
+---------- Router RTienda ---------
+enable
+config t
+hostname  RTienda
+
+
+no ip domain-lookup
+
+
+! Dar de alta los usuarios que podrán entrar a gestionar los equipos
+username   CEO   privilege  15  secret  tc2036
+username   CIT   privilege  15  secret  tc2036
+username   Admin01   privilege  15  secret  tc2036
+username   Admin02   privilege  15  secret  tc2036
+username   Admin03   privilege  15  secret  tc2036
+
+! Para activar el protocolo SSH en los equipos de interconexión, es necesario dar de alta nuestro dominio (solo es local):
+ip domain-name  AvePhoenix.com.mx 
+crypto key generate rsa
+
+yes
+1024
+
+line vty 0 4
+  login local
+  transport input ssh
+
+
+! enable secret 
+! service password-enc
+! Estos ya no sirven porque el SSH ya nos da la protección necesaria
+
+line con 0
+login local
+logging sync
+
+
+! Declaración de IP para interfaces
+int s0/0/0
+	desc Interfaz de interconexión con RFrontera
+	ip address 65.100.78.253 255.255.255.252
+	no shut
+
+int g0/0
+	description Interfaz para la Gerencia de Tienda
+	ip address 201.116.168.254 255.255.255.240
+	no shut
+
+int g0/1
+	description Interfaz para Tienda Virtual
+	ip address 201.116.168.62 255.255.255.192
+	no shut
+
+! Agregar las redes/subredes directamente conectadas que se desean anunciar
+network 201.116.168.0 0.0.0.63 area 0
+network 201.116.168.240 0.0.0.15 area 0
+network 65.100.78.252 0.0.0.3 area 0
+
+! Es recomendable que las interfaces de router que NO interconectan más routers sean configuradas como pasivas.
+passive-interface g0/0
+passive-interface g0/1
+
+
+--------- Switch STAPPSI-01 ---------
+enable
+config t
+hostname STAPPSI-01
+
+
+no ip domain-lookup
+
+
+! Dar de alta los usuarios que podrán entrar a gestionar los equipos
+username   CEO   privilege  15  secret  tc2036
+username   CIT   privilege  15  secret  tc2036
+username   Admin01   privilege  15  secret  tc2036
+username   Admin02   privilege  15  secret  tc2036
+username   Admin03   privilege  15  secret  tc2036
+
+! Para activar el protocolo SSH en los equipos de interconexión, es necesario dar de alta nuestro dominio (solo es local):
+ip domain-name  AvePhoenix.com.mx 
+crypto key generate rsa
+
+yes
+1024
+
+line vty 0 15
+  login local
+  transport input ssh
+
+
+line con 0
+login local
+logging sync
+
+
+banner motd  #Si no tienes acceso, no intentes entrar a este equipo!! #
+
+! Para poder acceder al switch por Telnet se requiere asignar una IP y MSK a la SVI
+int vlan 1
+desc La VLAN de Gestión Servers TAPPSI
+ip address 104.36.197.245 255.255.255.248
+no shut
+
+! El tercer parámetro requerido es la puerta de enlace.
+ip default-gateway 104.36.197.246 
+
+
+
+
+
+
+
+
