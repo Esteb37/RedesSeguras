@@ -24,7 +24,7 @@ crypto key generate rsa
 yes
 1024
 
-! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
 line con 0
  login local
  logging sync
@@ -35,27 +35,27 @@ line vty 0 4
 
 int g0/0/1
  desc Interfaz con el ISP ALESTRA
- ! En esta ocasi�n la configuraci�n de la interfaz ser� por DHCP.
+ ! En esta ocasin la configuracin de la interfaz ser por DHCP.
  ip address dhcp
  ! Solo aplica cuando instalamos el servicio de NAT
  ip nat outside
  no shut
 
-! Definici�n de subinterfaces en int g0/0/0 {Surveillance, Cajas,  Administracion, Gestion, Servers}
+! Definicin de subinterfaces en int g0/0/0 {Surveillance, Cajas,  Administracion, Gestion, Servers}
 
-int g0/0/0.<VID>
+int g0/0/0.007
  desc Subinterfaz para la subred de Surveillance
- encapsulation dot1Q <VID>
- ip address <DIR_IP> <MSK>
+ encapsulation dot1Q 007
+ ip address 192.168.0.62 255.255.255.192
  ! Solo aplica cuando instalamos el servicio de NAT
- ip nat <inside | outside>
+ ip nat inside
 
-int g0/0/0.<ID>
+int g0/0/0.20
  desc Subinterfaz para la subred de Cajas
- encapsulation dot1Q <ID>
- ip address <DIR_IP> <MSK>
+ encapsulation dot1Q 20
+ ip address 192.168.0.142 255.255.255.240
  ! Solo aplica cuando instalamos el servicio de NAT
- ip nat <inside | outside>
+ ip nat inside
 
 int g0/0/0.60
  desc Subinterfaz para la subred de Administracion
@@ -82,27 +82,34 @@ int g0/0/0.900
 int g0/0/0
  no shut
 
-! Definici�n de los servicios DHCP para subred Administraci�n
-ip dhcp excluded-address DirIP_Inicial  DirIP_Final
-ip dhcp pool <Nombre>
- network <Direcci�nIP_Inicial> <MSK>
- default-router <PuertaEnlacePredeterminada>
- dns-server <Direcci�nIP_DNS>
+! Definicin de los servicios DHCP para subred Administracin
+ip dhcp excluded-address 192.168.0.78
+ip dhcp pool Admin
+ network 192.168.0.64 255.255.255.240
+ default-router 192.168.0.78
+ dns-server 8.8.8.8
 
-! NAT est�tico. Aqu� se deben incluir los equipos que ser�n visibles desde Internet
-ip nat inside source static <DIR_IP_Privada> <DIR_IP_P�blica>
-
-! Definici�n del pool para NAT din�mico con sobrecarga (PAT)
-ip nat pool <Nombre_Pool> <IP_inicial> <IP_final> netmask <MSK>
-
-! Definir qui�n puede acceder al NAT din�mico
-access-list <N�mero> <Acci�n> <IP_Inicial> <Wild_Card_Mask>
-
-! Asociar el POOL de IP p�blicas y la lista de permisos al NAT o PAT din�mico
-ip nat inside source list <N�mero> pool <Nombre_Pool> overload
+! NAT esttico. Aqu se deben incluir los equipos que sern visibles desde Internet
+ip nat inside source static 192.168.0.245 210.26.7.71
+ip nat inside source static 192.168.0.253 210.26.7.70
+ip nat inside source static 192.168.0.252 210.26.7.69
+ip nat inside source static 192.168.0.251 210.26.7.68
+ip nat inside source static 192.168.0.1 210.26.7.67
+ip nat inside source static 192.168.0.2 210.26.7.66
+ip nat inside source static 192.168.0.3 210.26.7.65
 
 
-! Establecimiento de ruta est�tica por default directamente conectada.
+! Definicin del pool para NAT dinmico con sobrecarga (PAT)
+ip nat pool Kioskito  210.26.7.64 210.26.7.64 netmask 255.255.255.248
+
+! Definir quin puede acceder al NAT dinmico
+access-list 1 permit 192.168.0.0 0.0.0.255
+
+! Asociar el POOL de IP pblicas y la lista de permisos al NAT o PAT dinmico
+ip nat inside source list 1 pool Kioskito overload
+
+
+! Establecimiento de ruta esttica por default directamente conectada.
 ip route 0.0.0.0  0.0.0.0  g0/0/1
 
 
@@ -124,39 +131,52 @@ crypto key generate rsa
 yes
 1024
 
-! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
 line con 0
 login local
 logging sync
 
-line vty 0 4
+line vty 0 15
 login local
 transport input ssh
 
-! Creaci�n de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
-vlan <VID>
-name <Nombre>
+! Creacin de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
+vlan 007
+name Surveillance
 
-int range <Interfaces>
+vlan 20
+name Cajas
+
+vlan 60
+name Administracion
+
+vlan 777
+name Gestion
+
+vlan 900
+name Servers
+
+
+int range F0/15 - 18
  switchport mode access
- switchport access vlan <VID>
+ switchport access vlan 60
 
 int G0/2
  switchport mode access
- switchport access vlan <VID>
+ switchport access vlan 900
 
-! Definici�n de puertos trunk.
-int range <Iterfaces>
+! Definicin de puertos trunk.
+int range F0/5-8, F0/10-12, G0/1
  switchport mode trunk
  no shut
 
-! Declaraci�n y configuraci�n de la VLAN de gesti�n.
-int vlan <ID_VLAN>
- desc VLAN de gesti�n 
- ip add <DIR_IP> <MSK>
+! Declaracin y configuracin de la VLAN de gestin.
+int vlan 777
+ desc VLAN de gestin 
+ ip add 192.168.0.253 255.255.255.248
  no shut
 
-ip default-gateway <DIR_IP>
+ip default-gateway 192.168.0.254
 
 !-----------------------------------------------------
 !                 Switch SSurveillance
@@ -176,36 +196,49 @@ crypto key generate rsa
 yes
 1024
 
-! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
 line con 0
 login local
 logging sync
 
-line vty 0 4
+line vty 0 15
 login local
 transport input ssh
 
-! Creaci�n de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
-vlan 
-name 
+! Creacin de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
+vlan 007
+name Surveillance
 
-! Asignaci�n de todos los puertos a una VLAN
-int range <Interfaes>
+vlan 20
+name Cajas
+
+vlan 60
+name Administracion
+
+vlan 777
+name Gestion
+
+vlan 900
+name Servers
+
+! Asignacin de todos los puertos a una VLAN
+int range F0/1-24, G0/2
  switchport mode access
- switchport access vlan <VID>
+ switchport access vlan 007
 
-! Definici�n de puertos trunk.
-int range <Iterfaces>
+! Definicin de puertos trunk.
+int G0/1
  switchport mode trunk
  no shut
 
-! Declaraci�n y configuraci�n de la IP de gesti�n.
-int vlan <ID_VLAN>
- desc VLAN de gesti�n ....
- ip add <DIR_IP> <MSK>
+! Declaracin y configuracin de la IP de gestin.
+int vlan 777
+ desc VLAN de gestin 
+ ip add 192.168.0.252 255.255.255.248
  no shut
 
-ip default-gateway <PuertaEnlacePredeterminada>
+
+ip default-gateway 192.168.0.254
 
 !-----------------------------------------------------
 !                    Switch SCajas
@@ -225,33 +258,45 @@ crypto key generate rsa
 yes
 1024
 
-! Al usar "login local" una cuenta de usuario v�lido debe ser utilizada
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
 line con 0
 login local
 logging sync
 
-line vty 0 4
+line vty 0 15
 login local
 transport input ssh
 
-! Creaci�n de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
-vlan 
-name
+! Creacin de VLANs {Surveillance, Cajas,  Administracion, Gestion, Servers}
+vlan 007
+name Surveillance
 
-! Asignaci�n de todos puertos a la VLAN 20
-int range F0/1-24, G0/1-2
+vlan 20
+name Cajas
+
+vlan 60
+name Administracion
+
+vlan 777
+name Gestion
+
+vlan 900
+name Servers
+
+! Asignacin de todos puertos a la VLAN 20
+int range F0/1-24, G0/2
  switchport mode access
  switchport access vlan 20
 
-! Declaraci�n y configuraci�n de interfaz TRUNK.
-int <Interface>
+! Declaracin y configuracin de interfaz TRUNK.
+int g0/1
  switchport mode trunk
  no shut
 
-! Declaraci�n y configuraci�n de la IP de gesti�n.
-int vlan <VID>
- desc VLAN de gesti�n ....
- ip add <DIR_IP> <MSK>
+! Declaracin y configuracin de la IP de gestin.
+int vlan 777
+ desc VLAN de gestin 
+ ip add 192.168.0.251 255.255.255.248
  no shut
 
-ip default-gateway <PuertaEnlacePredeterminada>
+ip default-gateway 192.168.0.254
