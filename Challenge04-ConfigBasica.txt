@@ -65,8 +65,7 @@ int g0/1
 ip route 0.0.0.0 0.0.0.0 s0/0/1
 
 ! Debemos establecer el protocolo de ruteo entre los vecinos diretamente conectados.
-! En el modo de configuración de la terminal debemos definir el protocolo y un ID asociado router 
-ospf 2022
+! En el modo de configuración de la terminal debemos definir el protocolo y un ID asociado router ospf 2022
 ! Agregar las redes/subredes directamente conectadas que se desean anunciar
 network  104.36.197.240  0.0.0.7  area 0
 network  104.36.197.32   0.0.0.14 area 0
