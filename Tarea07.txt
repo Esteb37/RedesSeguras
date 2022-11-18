@@ -36,7 +36,7 @@ line vty 0 4
 int G0/1
 	desc Interfaz con el ISP ALESTRA
 	! En esta ocasin la configuracin de la interfaz ser por DHCP.
-	ip address 172.25.255.33 255.255.255.252
+	ip address 171.25.255.33 255.255.255.252
 	ip nat outside
 	no shut
 
