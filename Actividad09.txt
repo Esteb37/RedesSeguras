@@ -1,0 +1,17 @@
+ip  access-list standard NoAccessCallCenter
+
+  remark Ningún dispositivo de la subred del CallCenter puede entrar a la zona de servers de TI-TiendaVirtual
+  deny 192.168.1.178 0.0.0.15
+  permit any
+
+int  G0/0
+ip access-group NoAccessCallCenter out
+
+ip  access-list standard NoAccessCallCenter
+
+  remark Ningún dispositivo de la subred del CallCenter puede entrar a la zona de servers STAPPSI
+  deny 192.168.1.178 0.0.0.15
+  permit any
+
+int  G0/1
+ip access-group NoAccessCallCenter out
