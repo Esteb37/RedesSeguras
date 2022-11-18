@@ -1,0 +1,201 @@
+
+!-----------------------------------------------------
+!                      RFrontera
+!-----------------------------------------------------
+ena
+config ter
+hostname RFrontera
+
+no ip domain-lookup
+
+banner motd # ============================================
+
+	El acceso a este equipo esta restringido !!!
+
+=========================================================#
+
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+username  CEO privilege  15  secret  tc2036ceo
+
+ip domain-name cohaus.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
+line con 0
+	login local
+	logging sync
+
+line vty 0 4
+	login local
+	transport input ssh
+
+int G0/1
+	desc Interfaz con el ISP ALESTRA
+	! En esta ocasin la configuracin de la interfaz ser por DHCP.
+	ip address 172.25.255.33 255.255.255.252
+	ip nat outside
+	no shut
+
+int g0/0.10
+	desc Subinterfaz para la subred de Administradores
+	encapsulation dot1Q 10
+	ip address 192.168.0.142 255.255.255.240
+	! Solo aplica cuando instalamos el servicio de NAT
+	ip nat inside
+
+int g0/0.20
+	desc Subinterfaz para la subred de Usuarios
+	encapsulation dot1Q 20
+	ip address 192.168.0.126 255.255.255.128
+	! Solo aplica cuando instalamos el servicio de NAT
+	ip nat inside
+
+int g0/0.30
+	desc Subinterfaz para la subred de Servicios
+	encapsulation dot1Q 30
+	ip address 192.168.0.150 255.255.255.248
+	! Solo aplica cuando instalamos el servicio de NAT
+	ip nat inside
+
+! Encender la interfaz correspondiente.
+int g0/0
+	no shut
+
+! Definicin de los servicios DHCP para subred Usuarios
+ip dhcp excluded-address 192.168.0.126
+ip dhcp pool Usuarios
+	network 192.168.0.0 255.255.255.128
+	default-router 192.168.0.126
+	dns-server 8.8.8.8
+
+! NAT esttico. Aqu se deben incluir los equipos que sern visibles desde Internet
+! Cámara
+ip nat inside source static 192.168.0.130 65.100.255.135
+! Servidor
+ip nat inside source static 192.168.0.145 65.100.255.134
+
+
+! Definicin del pool para NAT dinmico con sobrecarga (PAT)
+ip nat pool Cohaus 65.100.255.128 65.100.255.133 netmask 255.255.255.248
+
+! Definir quin puede acceder al NAT dinmico
+access-list 1 permit 192.168.0.0 0.0.0.255
+
+! Asociar el POOL de IP pblicas y la lista de permisos al NAT o PAT dinmico
+ip nat inside source list 1 pool Cohaus overload
+
+
+! Establecimiento de ruta esttica por default directamente conectada.
+ip route 0.0.0.0  0.0.0.0  g0/1
+
+
+!-----------------------------------------------------
+!                       Switch SCohaus
+!-----------------------------------------------------
+ena
+config ter
+hostname SCohaus
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+ip domain-name cohaus.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
+line con 0
+	   login local
+	   logging sync
+
+line vty 0 15
+	   login local
+	   transport input ssh
+
+! Creacin de VLANs
+vlan 10
+name Administradores
+
+vlan 20
+name Usuarios
+
+vlan 30
+name Servicios
+
+
+int range F0/1-6
+	switchport mode access
+	switchport access vlan 10
+
+int range F0/20-24
+	switchport mode access
+	switchport access vlan 30
+
+int range F0/7-9, F0/11-19
+	switchport mode access
+	switchport access vlan 20
+
+! Definicin de puertos trunk.
+int range F0/10, G0/1
+	switchport mode trunk
+	no shut
+
+ip default-gateway 192.168.0.254
+
+!-----------------------------------------------------
+!                 Switch SUsuarios
+!-----------------------------------------------------
+ena
+config ter
+hostname SUsuarios
+
+no ip domain-lookup
+
+banner motd # El acceso a este equipo esta restringido !!!#
+! Damos de alta a los usuarios con privilegios de acceso
+username  CIT  privilege  15  secret  tc2036
+ip domain-name cohaus.com
+crypto key generate rsa
+
+yes
+1024
+
+! Al usar "login local" una cuenta de usuario vlido debe ser utilizada
+line con 0
+	   login local
+	   logging sync
+
+line vty 0 15
+	   login local
+	   transport input ssh
+
+! Creacin de VLANs
+vlan 10
+name Administradores
+
+vlan 20
+name Usuarios
+
+vlan 30
+name Servicios
+
+! Asignacin de todos los puertos a una VLAN
+int range F0/1-9, F0/11-24
+	   switchport mode access
+	   switchport access vlan 20
+
+
+! Definicin de puertos trunk.
+int F0/10
+	   switchport mode trunk
+	   no shut
+
+ip default-gateway 192.168.0.254
