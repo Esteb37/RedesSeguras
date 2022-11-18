@@ -1,0 +1,149 @@
+----------- ISP -----------
+  Ya configurado
+
+---------- Router RSucursal ---------
+enable
+config t
+hostname RSucursal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: banco@gmail.mx
+#
+
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 4
+ password  tc2036
+ login
+ logging sync
+
+! Declaración de IP para interfaces
+int s0/1/1
+desc Interfaz de interconexión con el ISP ALESTRA
+ip address 65.70.200.253  255.255.255.252
+!Las interfaces DCE establecen la velocidad de transferencia con base en el clock rate
+clock rate 2000000
+no shut
+
+
+int s0/1/0
+ip address 192.168.20.254  255.255.255.252
+no shut
+
+int g0/0/0
+description Interfaz para visitantes
+ip address  192.168.20.62  255.255.255.224
+no shut
+
+int g0/0/1
+description Interfaz para sucursal
+ip address 192.168.20.30 255.255.255.224
+no shut
+
+! La ruta por default nos permite enviar todo el tráfico de nuetra LAN a Internet
+ip route 0.0.0.0 0.0.0.0 s0/1/1
+
+! Debemos establecer el protocolo de ruteo entre los vecinos diretamente conectados.
+! En el modo de configuración de la terminal debemos definir el protocolo y un ID asociado 
+
+router ospf 2022
+
+! Agregar las redes/subredes directamente conectadas que se desean anunciar
+
+network 65.70.200.252 0.0.0.3 area 0
+network 192.168.20.32 0.0.0.31 area 0
+network 192.168.20.0 0.0.0.31 area 0
+
+
+! Es recomendable que las interfaces de router que NO interconectan más routers sean configuradas como pasivas.
+  passive-interface   s0/1/1
+  passive-interface   g0/0/0
+  passive-interface   g0/0/1
+
+! Este comando sólo aplica al Router Frontera.
+! Debemos propagar la ruta por default que sólo el Router Frontera define
+default-information   originate
+
+---------- Router RCajeros ---------
+enable
+config t
+hostname RCajeros
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: banco@gmail.mx
+#
+
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret tc2036
+
+! Protección de la línea de consola
+line console 0
+ password  tc2036
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 4
+ password  tc2036
+ login
+ logging sync
+
+! Declaración de IP para interfaces
+int s0/0/0
+ip address 192.168.20.253  255.255.255.252
+no shut
+
+int g0/0
+description Interfaz para cajeros de pagos
+ip address   192.168.20.94  255.255.255.240
+no shut
+
+int g0/1
+description Interfaz para cajeros de retiro
+ip address 192.168.20.78 255.255.255.240
+no shut
+
+! Debemos establecer el protocolo de ruteo entre los vecinos diretamente conectados.
+! En el modo de configuración de la terminal debemos definir el protocolo y un ID asociado 
+
+router ospf 2022
+
+! Agregar las redes/subredes directamente conectadas que se desean anunciar
+network  192.168.20.64 0.0.0.15  area 0
+network  192.168.20.80  0.0.0.15  area 0
+network  192.168.20.252  0.0.0.3  area 0
+
+
+! Es recomendable que las interfaces de router que NO interconectan más routers sean configuradas como pasivas.
+  passive-interface   g0/0
+  passive-interface   g0/1
+
+ 

@@ -1,0 +1,117 @@
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! - - - - - - - Autor: Esteban Padilla - - - - - - - 
+! = = = = = = = = = = = = = = = = = = = = = = = 
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del switch SW-Taquería
+! = = = = = = = = = = = = = = = = = = = = = = =
+ 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 10:00:00 Oct 16 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: taqueriamty@tec.mx
+#
+
+! Nombrar el equipo
+hostname SW-Taqueria
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret sysadmintec21
+
+! Protección de la línea de consola
+line console 0
+ password  sysadmintec21
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 15
+ password  sysadmintec21
+ login
+ logging sync
+
+! Asignación de IP a la VLAN 1 (SVI)
+interface vlan 1
+ ip address 191.168.200.6    255.255.255.248    
+ description Dirección IP para gestionar el equipo SW-Taqueria
+ no shutdown
+
+ip default-gateway    191.168.200.254
+
+
+
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Configuración del router R1
+! = = = = = = = = = = = = = = = = = = = = = = = 
+! Cambiar al modo privilegiado
+enable
+
+! Establecer hora y fecha
+clock set 22:00:00 Oct 16 2022
+
+! Configuración global del equipo
+configure terminal
+
+! Banner
+banner motd # Estás entrando a un equipo super protegido.
+
+Si decides entrar, estás cometiendo un delito.
+
+Para mayor información: taqueriamty@tec.mx
+#
+
+! Nombrar el equipo
+hostname R1
+
+! Limitar la búsqueda de un comando cuando no existe
+no ip domain-lookup
+
+! Proteger y cifrar todos los password
+service password-encryption
+
+! Establecer el modo de seguridad
+! Cambiar al modo privilegiado
+enable secret sysadmintec21
+
+! Protección de la línea de consola
+line console 0
+ password  sysadmintec21
+ login
+ logging sync
+
+! Protección para el acceso remoto
+line vty 0 4
+ password  sysadmintec21
+ login
+ logging sync
+
+! Configuración de interfaces
+interface G0/0
+ description Interfaz que da servicio a la red local de Administradores
+ ip address 191.168.200.254    255.255.255.248
+ no shutdown
+
+interface s0/0/0
+ description Interfaz con el ISP
+ ip address 209.165.200.225   255.255.255.252
+ no shutdown
+
+ip route 0.0.0.0    0.0.0.0    s0/0/0
