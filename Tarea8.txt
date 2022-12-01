@@ -1,0 +1,110 @@
+
+a) Diseña una lista de control de acceso estándar para impedir que las computadoras de la subred de Alumnos tengan acceso a la subred de Directivos. 
+
+! Router: Router A
+ip access-list standard NoAlumnosADirectivos
+
+	remark Impedir que las computadoras de la subred de Alumnos tengan acceso a la subred de Directivos.
+	deny 132.254.89.0 0.0.0.127
+	permit any
+
+int G0/0
+ip access-group NoAlumnosADirectivos out
+
+! b) Diseña una lista de control de acceso estándar para impedir que las computadoras de la subred de Profesores tengan acceso a la subred de Directivos. 
+
+! Router: Router A
+ip access-list standard NoProfesADirectivos
+
+	remark Impedir que las computadoras de la subred de Profesores tengan acceso a la subred de Directivos. 
+	deny 132.254.89.232 0.0.0.7
+	permit any 
+
+int G0/0
+ip access-group NoProfesADirectivos out
+
+! c) Diseña una lista de control de acceso estándar para que el visitante 01 no pueda acceder a la sección de Servidores. 
+
+! Router: Router A
+ip access-list standard NoVisitante1AServers
+
+	remark El visitante 01 no pueda acceder a la sección de Servidores. 
+	deny host 132.254.89.120
+	permit any
+
+int G0/1
+ip access-group NoVisitante1AServers out
+
+d) Diseña una lista de control de acceso estándar para impedir que las computadoras de los Alumnos tengan acceso a la subred de Directivos y a la subred de Profesores. 
+
+! Router: Router A
+ip access-list standard NoAlumnosAProfesNiDirectivos
+
+	remark Impedir que las computadoras de los Alumnos tengan acceso a la subred de Directivos y a la subred de Profesores.
+	deny 132.254.89.0 0.0.0.127
+	permit any
+
+int G0/0
+ip access-group NoAlumnosAProfesNiDirectivos out
+
+! Router: Router B
+ip access-list standard NoAlumnosAProfesNiDirectivos
+
+	remark Diseña una lista de control de acceso estándar para impedir que las computadoras de los Alumnos tengan acceso a la subred de Directivos y a la subred de Profesores.
+	deny 132.254.89.0 0.0.0.127
+	permit any
+
+int G0/0
+ip access-group NoAlumnosAProfesNiDirectivos out
+
+e) Diseña una lista de control de acceso extendida para impedir que las computadoras de la subred de Profesores tengan acceso al server de la subred de Directivos. 
+
+! Router: Router B
+ip access-list extended NoProfesAServerDirectivos
+
+	remark Impedir que las computadoras de la subred de Profesores tengan acceso al server de la subred de Directivos. 
+	deny tcp 132.254.89.232 0.0.0.7 host 132.254.89.221
+	permit ip any any
+
+int G0/0
+ip access-group NoProfesAServerDirectivos in
+
+f) Diseña una lista de control de acceso extendida para que el visitante 01 no pueda acceder a Internet. 
+
+! Router: Router B
+ip access-list extended NoVisitante1AInternet
+
+	remark El visitante 01 no pueda acceder a Internet.
+	deny tcp host 132.254.89.120 any
+	permit ip any any
+
+int S0/0/0
+ip access-group NoVisitante1AInternet out
+
+g) Diseña una lista de control de acceso extendida para que la sección de Alumnos no pueda acceder al servidor de Profesores vía el protocolo WEB ni por 
+FTP. 
+
+! Router: Router B
+ip access-list extended NoAlumnosAServerProfes
+
+	remark La sección de Alumnos no pueda acceder al servidor de Profesores vía el protocolo WEB ni por FTP.
+	deny tcp 132.254.89.0 0.0.0.127 host 132.254.89.238 eq 80
+  deny tcp 132.254.89.0 0.0.0.127 host 132.254.89.238 eq 20
+	deny tcp 132.254.89.0 0.0.0.127 host 132.254.89.238 eq 21
+	permit ip any any
+
+int G0/1
+ip access-group NoAlumnosAServerProfes in
+
+h) Diseña una lista de control de acceso extendida para que ninguna dirección IP interna de nuestra red pueda acceder al servidor de LOL vía el protocolo 
+WEB.
+
+! Router: Router B
+ip access-list extended NadieAWebLOL
+
+	remark Ninguna dirección IP interna de nuestra red pueda acceder al servidor de LOL vía el protocolo WEB.
+	deny tcp any host 111.65.32.1 eq 80
+	permit ip any any
+
+int S0/0/0
+ip access-group NadieAWebLOL out
