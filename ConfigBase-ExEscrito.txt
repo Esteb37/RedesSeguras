@@ -1,0 +1,212 @@
+!=======================================================!
+!================= ISP ya configurado. =================!                         
+!=======================================================!
+
+!-----------------------------------------!
+!------- Router  RF-ArenaBorregos  -------!
+!-----------------------------------------!
+
+ena
+
+! Establecer fecha y hora del día de hoy.
+clock set 17:00:00 Dec 1 2022
+
+config t
+
+! Hostame RF-ArenaBorrego.   
+hostname RF-ArenaBorregos
+
+no ip domain-lookup
+
+! Configurar un banner de prevención de acceso al router.
+banner motd # ============================================
+
+	El acceso a este equipo esta restringido !!!
+
+	   Esteban Padilla Cerdio
+	   A01703068
+
+=========================================================#
+
+! Fortalecer el nivel de privilegios de acceso al implementar el protocolo ssh y que solo el CIT tenga acceso al router.  El password del CIT será ArenaBorrego.
+username  CIT  privilege  15  secret  ArenaBorrego
+
+ip domain-name itesm.mx
+crypto key generate rsa
+
+yes
+1024
+
+line con 0
+	login local
+	logging sync
+
+line vty 0 4
+	login local
+	transport input ssh
+
+! Realizar la configuración de las interfaces físicas del router RF-ArenaBorrego. 
+interface g0/0/0
+	description Interfaz con el ISP
+	ip address 192.168.10.254 255.255.255.252
+	no shutdown
+
+! Configurar las subinterfaces para dar servicio a las VLANs.
+interface g0/0/1.110
+	description Subinterfaz para la subred de BlueZone
+	encapsulation dot1Q 110
+	ip address 192.168.10.78 255.255.255.240
+
+interface g0/0/1.410
+	description Subinterfaz para la subred de RedZone
+	encapsulation dot1Q 410
+	ip address 192.168.10.94 255.255.255.240
+
+interface g0/0/1.98
+	description Subinterfaz para la subred de Espectadores
+	encapsulation dot1Q 98
+	ip address 192.168.10.62 255.255.255.192
+
+interface g0/0/1.555
+	description Subinterfaz para la subred de Caster
+	encapsulation dot1Q 555
+	ip address 192.168.10.102 255.255.255.248
+
+interface g0/0/1.133
+	description Subinterfaz para la subred de Gestión
+	encapsulation dot1Q 133
+	ip address 192.168.10.106 255.255.255.252
+
+interface g0/0/1
+	no shutdown
+
+! Diseña e instala en el router, el servicio de DHCP para que cada uno de los segmentos Espectadores y Caster, conectados en su respectiva VLAN, obtengan dirección IP automáticamente.
+
+! DHCP para Espectadores
+ip dhcp excluded-address 192.168.10.62
+ip dhcp pool Espectadores
+	network 192.168.10.0 255.255.255.192
+	default-router 192.168.10.62
+	dns-server 8.8.8.8
+
+! DHCP para Casters
+ip dhcp excluded-address 192.168.10.102
+ip dhcp pool Caster
+	network 192.168.10.96 255.255.255.248
+	default-router 192.168.10.102
+	dns-server 8.8.8.8
+
+! Diseña e instala una lista de control de acceso extendida para que la sección de Espectadores no puedan acceder vía WEB a los servidores ArenaBorregos y LOL-Tournament. El resto del tráfico pasa libremente.
+
+! Con esta lista de control de acceso la sección de Espectadores puede acceder al Internet.
+
+ip access-list extended NoEspectadoresAServidores
+    remark La sección de Espectadores no puedan acceder vía WEB a los servidores ArenaBorregos y LOL-Tournament. El resto del tráfico pasa libremente.
+    deny tcp 192.168.10.0 0.0.0.63 host 192.168.100.254 eq 80
+    deny tcp 192.168.10.0 0.0.0.63 host 192.168.90.254 eq 80
+
+    permit ip any any
+
+interface G0/0/1.98
+    ip access-group NoEspectadoresAServidores in
+
+! inalmente, para interconectar el RF- ArenaBorrego con el ISP debes incluir rutas estáticas por default.
+ip route 0.0.0.0  0.0.0.0  g0/0/0
+
+!----------------- Fin -------------------!
+
+!----------------------------------------------!
+!----------- Switch S-ArenaBorregos -----------!
+!----------------------------------------------!
+
+! Realiza la configuración del switch S-ArenaBorrego.    
+ena
+
+! Establecer fecha y hora del día de hoy.
+clock set 17:00:00 Dec 1 2022
+
+config t
+
+! Hostame del switch S-ArenaBorrego. 
+hostname S-ArenaBorregos
+
+no ip domain-lookup
+
+! Configurar un banner de prevención de acceso al switch.
+banner motd # ============================================
+
+	El acceso a este equipo esta restringido !!!
+
+	   Esteban Padilla Cerdio
+	   A01703068
+
+=========================================================#
+
+! Fortalecer el nivel de privilegios de acceso al implementar el protocolo ssh y que solo el CIT tenga acceso al switch. El password del CIT será ArenaBorrego. 
+username  CIT  privilege  15  secret  ArenaBorrego
+
+ip domain-name itesm.mx
+crypto key generate rsa
+
+yes
+1024
+
+line con 0
+	login local
+	logging sync
+
+line vty 0 15
+	login local
+	transport input ssh
+
+! Dar de alta las VLANs. 
+vlan 110
+name BlueZone
+
+vlan 410
+name RedZone
+
+vlan 98
+name Espectadores
+
+vlan 555
+name Caster
+
+vlan 133
+name Gestion
+
+! Configurar el puerto TRUNK.
+interface G0/1
+	switchport mode trunk
+    no shutdown
+
+! Asignar, de acuerdo a la información de la figura 01, los puertos de cada una de las VLANs. 
+! Acceso de expectadores
+interface G0/2
+	switchport mode access
+    switchport access vlan 98
+
+! Acceso de BlueZone
+interface range F0/1-9
+    switchport mode access
+    switchport access vlan 110
+
+! Acceso de RedZone
+interface range F0/10-18
+    switchport mode access
+    switchport access vlan 410
+
+! Acceso de Casters
+interface range F0/20-24
+    switchport mode access
+    switchport access vlan 555
+
+! Configurar la IP y puerta de enlace predeterminada de la VLAN de gestión.
+interface vlan 133
+    description VLAN de gestión
+    ip add 192.168.10.105 255.255.255.252
+    no shutdown
+
+ip default-gateway 192.168.10.106
+
+!----------------- FIN ----------------------!
