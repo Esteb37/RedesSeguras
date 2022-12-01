@@ -1,0 +1,45 @@
+ip nat inside source static 172.16.20.205   65.70.45.35
+
+ip nat inside source static 172.16.20.204   65.70.45.34
+
+ip nat pool GrupoMenindez  65.70.45.32  65.70.45.33  netmask  255.255.255.252
+
+ 
+
+access-list 1 permit 172.16.20.0  0.0.0.255
+
+ip nat inside source list 1 pool GrupoMenindez overload
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+No hay suficientes NATs en el Pool para los puntos de venta. Tienen un /30 con las direcciones 65.70.45.32  a 65.70.45.34, y por lo tanto solamente dos direcciones pueden ser utilizadas a la vez, ya que los servidores ocupan dos de las cuatro disponibles. 
+
+La solución sería expandir el pool para tener al menos 8 para los ejecutivos, y 2 para los servidores. Éste sería un /28 que daría acceso a 16 direcciones, de las cuales usarían 10
+
+Las direcciones disponibles del pool serían por lo tanto 
+
+
+ip nat inside source static 172.16.20.205   65.70.45.40
+
+ip nat inside source static 172.16.20.204   65.70.45.41
+
+ 
+
+ip nat pool GrupoMenindez  65.70.45.32  65.70.45.39  netmask  255.255.255.240
+
+ 
+
+access-list 1 permit 172.16.20.0  0.0.0.255
+
+ip nat inside source list 1 pool GrupoMenindez

@@ -1,17 +1,95 @@
 ip  access-list standard NoAccessCallCenter
 
   remark Ningún dispositivo de la subred del CallCenter puede entrar a la zona de servers de TI-TiendaVirtual
-  deny 192.168.1.178 0.0.0.15
+  deny 192.168.1.176 0.0.0.15
   permit any
 
 int  G0/0
-ip access-group NoAccessCallCenter out
+  ip access-group NoAccessCallCenter out
 
 ip  access-list standard NoAccessCallCenter
 
   remark Ningún dispositivo de la subred del CallCenter puede entrar a la zona de servers STAPPSI
-  deny 192.168.1.178 0.0.0.15
+  deny 192.168.1.176 0.0.0.15
   permit any
 
 int  G0/1
-ip access-group NoAccessCallCenter out
+  ip access-group NoAccessCallCenter out
+
+! Router: RFrontera
+
+ip  access-list standard NoCallCenterNoManagement
+
+  remark Ningún dispositivo de la subred del CallCenter ni de GerenciaTienda puede entrar a la zona de servers STAPPSI
+  deny 192.168.1.0 0.0.0.63
+  deny 192.168.1.176 0.0.0.15
+  permit any
+
+int  G0/1
+  ip access-group NoCallCenterNoManagement out
+
+! Extendidas
+
+
+! Router: RFrontera
+ip  access-list  extended  NoCallCenterAContaAndInvent
+
+  remark  Ningún dispositivo de la red de CallCenter puede acceder a los servidores de Inventarios y Contabilidad
+  deny tcp 192.168.1.176 0.0.0.15 host 192.168.1.65
+  deny tcp 192.168.1.176 0.0.0.15 host 192.168.1.66
+  permit ip any any 
+
+int  g0/0
+  ip access-group NoCallCenterAContaAndInvent in
+
+
+! Router: RTienda
+
+ip  access-list  extended NoGerenciaAConta
+
+  remark  Ningún dispositivo de la red de CallCenter puede acceder a los servidores de Inventarios y Contabilidad
+  deny tcp 192.168.1.0 0.0.0.63 host 192.168.1.66
+  permit ip any any 
+
+int  g0/1
+  ip access-group NoGerenciaAConta in
+
+
+ip  access-list  extended SoloContadorAConta
+
+  remark únicamente el acceso al server de Contabilidad desde la máquina del Contador de la organización. El resto del tráfico pasa libremente a otros servers o equipos terminales de la subred de Tienda Virtual.
+  permit tcp host 192.168.1.4 host 192.168.1.66
+  deny tcp any host 192.168.1.66
+  permit ip any any
+
+int  g0/0
+  ip access-group SoloContadorAConta out
+
+
+!g) Diseña una ACL que impida que desde el exterior de la red local se acceda a los servers vía el protocolo FTP.
+
+! Router RFrontera
+ip access-list extended NoAccessServersFTP
+
+  remark Impide que desde el exterior de la red local se acceda a los servers vía el protocolo FTP
+  deny tcp any any eq 20
+  deny tcp any any eq 21
+
+  permit ip any any
+
+int s0/0/1
+  ip access-group NoAccessServersFTP in
+
+!h) Ningún dispositivo de la red de la organización puede acceder a los servidores WEB de LOL ni Tinder. Utiliza las direcciones IP públicas de los servidores para diseñar la ACL.
+
+ip access-list extended NoAccessLolTinder
+
+  remark Ningún dispositivo de la red de la organización puede acceder a los servidores WEB de LOL ni Tinder
+
+  deny tcp any host 132.89.254.1 eq 80
+  deny tcp any host 132.89.254.250 eq 80
+
+  permit ip any any
+
+int s0/0/1
+  ip access-group NoAccessLolTinder out
